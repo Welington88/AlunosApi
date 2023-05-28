@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.SwaggerUI;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -67,7 +68,7 @@ builder.Services.AddApiVersioning(o =>
     o.UseApiBehavior = false;
     o.ReportApiVersions = true;
     o.AssumeDefaultVersionWhenUnspecified = true;
-    o.DefaultApiVersion = new ApiVersion(1, 0);
+    o.DefaultApiVersion = new ApiVersion(2, 0);
 
     o.ApiVersionReader = ApiVersionReader.Combine(
         new HeaderApiVersionReader("x-api-version"),
@@ -78,7 +79,9 @@ builder.Services.AddApiVersioning(o =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "AlunoApi Core 6", Version = "v1", Description = "AlunosApi AspNetˆ" });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "AlunoApi Core 6", Version = "v1", Description = "AlunosApi AspNet" });
+    c.SwaggerDoc("v2", new OpenApiInfo { Title = "AlunoApi Core 6", Version = "v2", Description = "AlunosApi AspNet - Version 2" });
+
     //Authoraze na api
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
     {
@@ -112,7 +115,17 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "AlunoApi Core v1"));
+    app.UseSwaggerUI(c => {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "AlunoApi Core v1");
+        c.SwaggerEndpoint("/swagger/v2/swagger.json", "AlunoApi Core v2");
+
+        //c.RoutePrefix = string.Empty;
+        c.DocExpansion(DocExpansion.List);
+        c.DefaultModelsExpandDepth(-1);
+        c.OAuthClientId("swagger-ui");
+        c.OAuthAppName("Swagger UI");
+    });
+    
 }
 
 app.UseRouting();
@@ -126,6 +139,14 @@ app.UseAuthorization();
 app.UseEndpoints(endpoints =>
 {
     endpoints.MapControllers();
+
+    endpoints.MapControllerRoute(
+        name: "default",
+        pattern: "api/{controller}/{action}/{id?}");
+
+    endpoints.MapControllerRoute(
+        name: "v2",
+        pattern: "api/v2/{controller}/{action}/{id?}");
 });
 
 app.Run();
